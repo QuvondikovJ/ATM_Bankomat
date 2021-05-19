@@ -23,17 +23,17 @@ import java.util.UUID;
 
 @Component
 public class DataLoader implements CommandLineRunner {
-@Autowired
+    @Autowired
     RoleRepository roleRepository;
-@Autowired
+    @Autowired
     PasswordEncoder passwordEncoder;
-@Autowired
-CardTypeRepository cardTypeRepository;
-@Autowired
+    @Autowired
+    CardTypeRepository cardTypeRepository;
+    @Autowired
     EmployeeRepository employeeRepository;
 
-@Value(value = "${spring.datasource.initialization-mode}")
-private String initializationMode;
+    @Value(value = "${spring.datasource.initialization-mode}")
+    private String initializationMode;
 
 
     LocalDateTime localDateTime = LocalDateTime.now();
@@ -42,28 +42,28 @@ private String initializationMode;
 
     @Override
     public void run(String... args) throws Exception {
-        if (initializationMode.equals("always")){
-            Role  role = new Role(1, RoleName.DIRECTOR);
-            Role  role1 = new Role(2, RoleName.ACCOUNTING_MANAGER);
+        if (initializationMode.equals("always")) {
+            Role role = new Role(1, RoleName.DIRECTOR);
+            Role role1 = new Role(2, RoleName.ACCOUNTING_MANAGER);
             CardType cardType = new CardType(1, CardName.HUMO);
             CardType cardType1 = new CardType(2, CardName.UZCARD);
             CardType cardType2 = new CardType(3, CardName.VISA);
-            Employee employee = new Employee(directorId,"director","directorov",
+            Employee employee = new Employee(directorId, "director", "directorov",
                     "+998971112233", passwordEncoder.encode("1111"),
-                    "d@gmail.com",role,true,true,true,true);
+                    "d@gmail.com", role,true, true, true, true, true);
 
             List<Role> roles = new ArrayList<>();
             roles.add(role);
             roles.add(role1);
-roleRepository.saveAll(roles);
+            roleRepository.saveAll(roles);
 
-List<CardType> cardTypes = new ArrayList<>();
-cardTypes.add(cardType);
-cardTypes.add(cardType1);
-cardTypes.add(cardType2);
-cardTypeRepository.saveAll(cardTypes);
+            List<CardType> cardTypes = new ArrayList<>();
+            cardTypes.add(cardType);
+            cardTypes.add(cardType1);
+            cardTypes.add(cardType2);
+            cardTypeRepository.saveAll(cardTypes);
 
-employeeRepository.save(employee);
+            employeeRepository.save(employee);
         }
     }
 

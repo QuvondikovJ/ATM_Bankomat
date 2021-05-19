@@ -3,6 +3,8 @@ package uz.pdp.program_49.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,6 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import uz.pdp.program_49.security.JwtFilter;
 import uz.pdp.program_49.service.CardService;
 import uz.pdp.program_49.service.EmployeeService;
+
+import java.util.Properties;
 
 @Configuration
 @EnableWebSecurity
@@ -57,6 +61,19 @@ public class SecurityConfig  extends WebSecurityConfigurerAdapter {
         return new BCryptPasswordEncoder();
     }
 
-
+@Bean
+    public JavaMailSender javaMailSender(){
+        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+        mailSender.setHost("smtp.gmail.com");
+        mailSender.setPort(587);
+        mailSender.setUsername("example@gmail.com");
+        mailSender.setPassword("example");
+    Properties properties = mailSender.getJavaMailProperties();
+    properties.put("mail.transport.protocol", "smtp");
+    properties.put("mail.smtp.auth", "true");
+    properties.put("mail.smtp.starttls.enable", "true");
+    properties.put("mail.debug", "true");
+    return mailSender;
+}
 
 }

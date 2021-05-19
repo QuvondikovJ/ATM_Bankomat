@@ -31,14 +31,13 @@ public class Bankomat extends General {
 
     private Double balance= 0.0; // minimum 20 mln yoki 2000$ qolsa ACCOUNTING_MANAGER ni emailiga xabar boradi
 
-    private String city;
-
-    private String district;
-
-    private String street;
+    @ManyToOne
+    private Address address; // bitta address da 2 ta yoki undan ko'p bankomat bo'lishi mumkin
+    // ya'ni bittasi UZcard , yana bittasi HUMO, ... kabi bo'lishi mumkin
 
     @ManyToOne
     private Card card; // bu card ga commisiya larni puli tushuib boradi
 
+    private boolean active = true;
 
 }

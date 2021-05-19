@@ -11,10 +11,7 @@ import uz.pdp.program_49.entity.enums.CardName;
 import uz.pdp.program_49.entity.enums.RoleName;
 import uz.pdp.program_49.payload.BankomatDto;
 import uz.pdp.program_49.payload.Result;
-import uz.pdp.program_49.repository.BankRepository;
-import uz.pdp.program_49.repository.BankomatRepository;
-import uz.pdp.program_49.repository.CardRepository;
-import uz.pdp.program_49.repository.CardTypeRepository;
+import uz.pdp.program_49.repository.*;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +27,10 @@ public class BankomatService {
     CardRepository cardRepository;
     @Autowired
     CardTypeRepository cardTypeRepository;
+    @Autowired
+    AddressRepository addressRepository;
+    @Autowired
+    DistrictRepository districtRepository;
 
     public Result add(BankomatDto bankomatDto) {
         Employee employee = (Employee) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -41,7 +42,7 @@ public class BankomatService {
             UUID cardId = UUID.fromString(bankomatDto.getCardId());
             Card card = cardRepository.getOne(cardId);
 
-            boolean existsByStreetAndCardTypeAndBankomat = bankomatRepository.existsByStreetAndCardTypeAndBank(bankomatDto.getStreet(), cardType, bank);
+            boolean existsByStreetAndCardTypeAndBankomat = bankomatRepository.existsByCardTypeAndBankAndAddress_HomeNumber(cardType, bank, bankomatDto.getHomeNumber());
             if (existsByStreetAndCardTypeAndBankomat) {
                 return new Result("This street already has such bankomat of this bank!", false);
             }
@@ -54,9 +55,15 @@ public class BankomatService {
             bankomat.setBank(bank);
             bankomat.setCard(card);
             bankomat.setCardType(cardType);
-            bankomat.setCity(bankomatDto.getCity());
-            bankomat.setDistrict(bankomatDto.getDistrict());
-            bankomat.setStreet(bankomatDto.getStreet());
+
+            Address address = new Address();
+            District district = districtRepository.getOne(bankomatDto.getDistrictId());
+            address.setStreet(bankomatDto.getStreet());
+            address.setHomeNumber(bankomatDto.getHomeNumber());
+            address.setDistrict(district);
+            address = addressRepository.save(address);
+
+            bankomat.setAddress(address);
             bankomatRepository.save(bankomat);
             return new Result("New bankomat successfully saved.", true);
         }
@@ -69,7 +76,7 @@ public class BankomatService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Bankomat> page1 = bankomatRepository.findAll(pageable);
+            Page<Bankomat> page1 = bankomatRepository.getByActive(true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right to see list of bankomats!", false);
@@ -80,11 +87,12 @@ public class BankomatService {
         RoleName roleName = employee.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR) || roleName.equals(RoleName.ACCOUNTING_MANAGER)) {
-            Optional<Bankomat> optionalBankomat = bankomatRepository.findById(id);
-            if (!optionalBankomat.isPresent()) {
+           boolean existsByIdAndActive = bankomatRepository.existsByIdAndActive(id, true);
+            if (!existsByIdAndActive) {
                 return new Result("Such bankomat id not exist!", false);
             }
-            return new Result(optionalBankomat.get(), true);
+            Bankomat bankomat = bankomatRepository.getByIdAndActive(id, true);
+            return new Result(bankomat, true);
         }
         return new Result("You do not have the right to see information of bankomat!", false);
     }
@@ -95,7 +103,7 @@ public class BankomatService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Bankomat> page1 = bankomatRepository.getByBankId(id, pageable);
+            Page<Bankomat> page1 = bankomatRepository.getByBankIdAndActive(id, true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right too see list of bankomats!", false);
@@ -107,7 +115,7 @@ public class BankomatService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Bankomat> page1 = bankomatRepository.getByCardId(id, pageable);
+            Page<Bankomat> page1 = bankomatRepository.getByCardIdAndActive(id,true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right to see list of bankomats!", false);
@@ -119,7 +127,7 @@ public class BankomatService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Bankomat> page1 = bankomatRepository.getByCardTypeId(id, pageable);
+            Page<Bankomat> page1 = bankomatRepository.getByCardTypeIdAndActive(id,true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right to see list of bankomats!", false);
@@ -130,14 +138,14 @@ public class BankomatService {
         RoleName roleName = employee.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR) || roleName.equals(RoleName.ACCOUNTING_MANAGER)) {
-            Optional<Bankomat> optionalBankomat = bankomatRepository.findById(id);
-            if (!optionalBankomat.isPresent()) {
+           boolean existsByIdAndActive = bankomatRepository.existsByIdAndActive(id, true);
+            if (!existsByIdAndActive) {
                 return new Result("Such bankomat id not exist!", false);
             }
-            Bankomat bankomat = optionalBankomat.get();
+            Bankomat bankomat =bankomatRepository.getByIdAndActive(id,true);
 
             boolean existsByStreetAndCardTypeAndBank = bankomatRepository.
-                    existsByStreetAndCardTypeIdAndBankIdAndIdNot(bankomatDto.getStreet(), bankomatDto.getCardTypeId(), bankomatDto.getBankId(), id);
+                    existsByCardTypeIdAndBankIdAndIdNotAndAddress_HomeNumber(bankomatDto.getCardTypeId(), bankomatDto.getBankId(), id, bankomatDto.getHomeNumber());
             if (existsByStreetAndCardTypeAndBank) {
                 return new Result("This street already has such bankomat of this bank!", false);
             }
@@ -149,9 +157,14 @@ public class BankomatService {
             bankomat.setBank(bank);
             bankomat.setCardType(cardType);
             bankomat.setCard(card);
-            bankomat.setCity(bankomatDto.getCity());
-            bankomat.setDistrict(bankomatDto.getDistrict());
-            bankomat.setStreet(bankomatDto.getStreet());
+
+            Address address = bankomat.getAddress();
+            District district = districtRepository.getOne(bankomatDto.getDistrictId());
+            address.setStreet(bankomatDto.getStreet());
+            address.setHomeNumber(bankomatDto.getHomeNumber());
+            address.setDistrict(district);
+            addressRepository.save(address);
+
             bankomatRepository.save(bankomat);
             return new Result("Given bankomat successfully edited.", true);
         }
@@ -175,11 +188,13 @@ public class BankomatService {
         RoleName roleName = employee.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR)) {
-            Optional<Bankomat> optionalBankomat = bankomatRepository.findById(id);
-            if (!optionalBankomat.isPresent()) {
+            boolean existByIdAndActive = bankomatRepository.existsByIdAndActive(id,true);
+            if (!existByIdAndActive) {
                 return new Result("Such bankomat id not exist!", false);
             }
-            bankomatRepository.deleteById(id);
+          Bankomat bankomat = bankomatRepository.getByIdAndActive(id, true);
+            bankomat.setActive(false);
+            bankomatRepository.save(bankomat);
             return new Result("Given bankomat successfully deleted.", true);
         }
         return new Result("You do not have the right to delete information of bankomats!", false);

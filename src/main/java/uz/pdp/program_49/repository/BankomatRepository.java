@@ -13,15 +13,26 @@ import uz.pdp.program_49.entity.CardType;
 import java.util.UUID;
 
 public interface BankomatRepository extends JpaRepository<Bankomat, Integer> {
-    boolean existsByStreetAndCardTypeAndBank(String street, CardType cardType, Bank bank);
-    boolean existsByStreetAndCardTypeIdAndBankIdAndIdNot(String street, Integer cardType_id, Integer bank_id, Integer id);
-    Page<Bankomat> getByBankId(Integer bank_id, Pageable pageable);
-    Page<Bankomat> getByCardTypeId(Integer cardType_id, Pageable pageable);
-    Page<Bankomat> getByCardId(UUID card_id, Pageable pageable);
+    boolean existsByCardTypeAndBankAndAddress_HomeNumber(CardType cardType, Bank bank, Integer address_homeNumber);
+
+    boolean existsByCardTypeIdAndBankIdAndIdNotAndAddress_HomeNumber(Integer cardType_id, Integer bank_id, Integer id, Integer address_homeNumber);
+
+    Page<Bankomat> getByBankIdAndActive(Integer bank_id, boolean active, Pageable pageable);
+
+    Page<Bankomat> getByCardTypeIdAndActive(Integer cardType_id, boolean active, Pageable pageable);
+
+    Page<Bankomat> getByCardIdAndActive(UUID card_id, boolean active, Pageable pageable);
+
+    boolean existsByIdAndActive(Integer id, boolean active);
+
+    Bankomat getByIdAndActive(Integer id, boolean active);
+
+    Page<Bankomat> getByActive(boolean active, Pageable pageable);
+
 
     @Transactional
     @Modifying
-    @Query(value = "update bankomat as b set b._max_withdraw_money=:maxWithdrawMoney where b.card_type_id=:cardTypeId",nativeQuery = true)
+    @Query(value = "update bankomat as b set b.max_withdraw_money=:maxWithdrawMoney where b.card_type_id=:cardTypeId", nativeQuery = true)
     void editMaxWithdrawMoneyByCardTypeId(Double maxWithdrawMoney, Integer cardTypeId);
 
 

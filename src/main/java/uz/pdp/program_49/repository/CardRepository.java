@@ -11,10 +11,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface CardRepository extends JpaRepository<Card, UUID> {
-    boolean existsByUsernameAndCardTypeId(String username, Integer cardType_id);
-    Page<Card> getByBankId(Integer bank_id, Pageable pageable);
-    Page<Card> getByCardTypeId(Integer cardType_id, Pageable pageable);
-    List<Card> getByClientId(UUID client_id);
-    Optional<Card> findByUsername(String username);
-//    boolean existsByUsernameAndCardTypeAndIdNot(String username, CardType cardType, UUID id);
+    boolean existsByUsernameAndCardTypeIdAndActive(String username, Integer cardType_id, boolean active);
+
+    Page<Card> getByBankIdAndActive(Integer bank_id, boolean active, Pageable pageable);
+
+    Page<Card> getByCardTypeIdAndActive(Integer cardType_id, boolean active, Pageable pageable);
+
+    List<Card> getByClientIdAndActive(UUID client_id, boolean active);
+
+    Optional<Card> findByUsernameAndActive(String username, boolean active);
 }

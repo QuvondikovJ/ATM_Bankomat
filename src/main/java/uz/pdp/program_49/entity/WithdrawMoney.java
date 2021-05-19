@@ -22,15 +22,15 @@ public class WithdrawMoney extends General {
     @GeneratedValue
     private UUID id;
 
-@OneToMany(mappedBy = "withdrawMoney", cascade = CascadeType.ALL)
-private List<KupyuraInBankomat> kupyuraInBankomat;
-
 @OneToOne
 private Card card;
 
 private Integer withdrawMoney;
 
 private boolean withdrawMoneyOrDepositMoney;
+
+@ManyToOne
+private Bankomat bankomat;
 
     public WithdrawMoney(boolean withdrawMoneyOrDepositMoney) {
         this.withdrawMoneyOrDepositMoney = withdrawMoneyOrDepositMoney;

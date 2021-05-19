@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class DepositMoneyDto {
-private Integer bankomatId;
+private Integer       bankomatId;
 private List<Integer> kupyuraId;
 private List<Integer> howMuchKupyura;
 

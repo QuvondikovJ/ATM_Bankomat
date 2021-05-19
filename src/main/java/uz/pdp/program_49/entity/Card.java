@@ -45,7 +45,12 @@ private String username;  // 16 xonali takrorlanmas son
     @ManyToOne
     private CardType cardType;
 
-    private Double balance = 500.0;  // default holatda card yaratilganda 500 sum balansi bo'lsin
+    private Double balance;  // default holatda card yaratilganda, bu card HUMO yoki
+    // UZCARD bo'lsa 500 sum balansi bo'lsin, VISA bo'lsa 1 dollar balansi bo'lsin
+
+    private boolean active = true;
+
+
 
 private boolean accountNonExpired = true;
 

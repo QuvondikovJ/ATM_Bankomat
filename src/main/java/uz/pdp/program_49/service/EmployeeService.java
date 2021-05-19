@@ -45,11 +45,11 @@ public class EmployeeService implements UserDetailsService {
         RoleName roleName = employeeWhichEnteredSystem.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR)) {
-            Optional<Employee> optionalEmployee = employeeRepository.findByUsername(employeeDto.getUsername());
+            Optional<Employee> optionalEmployee = employeeRepository.findByUsernameAndActive(employeeDto.getUsername(),true);
             if (optionalEmployee.isPresent()) {
                 return new Result("This username belongs to another employee!", false);
             }
-            Optional<Employee> optionalEmployee1 = employeeRepository.findByPhoneNumber(employeeDto.getPhoneNumber());
+            Optional<Employee> optionalEmployee1 = employeeRepository.findByPhoneNumberAndActive(employeeDto.getPhoneNumber(),true);
             if (optionalEmployee1.isPresent()) {
                 return new Result("This phone number belongs to another employee!", false);
             }
@@ -70,6 +70,7 @@ public class EmployeeService implements UserDetailsService {
 
     public Result login(LoginDto loginDto) {
         try {
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginDto.getUsername(),
@@ -89,7 +90,7 @@ public class EmployeeService implements UserDetailsService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Employee> page1 = employeeRepository.findAll(pageable);
+            Page<Employee> page1 = employeeRepository.getByActive(true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right to see list of employee!", false);
@@ -100,11 +101,8 @@ public class EmployeeService implements UserDetailsService {
         RoleName roleName = employee.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR) || employee.getId().equals(id)) {
-            Optional<Employee> optionalEmployee = employeeRepository.findById(id);
-            if (!optionalEmployee.isPresent()) {
-                return new Result("Such employee id not exist!", false);
-            }
-            return new Result(optionalEmployee.get(), true);
+            Optional<Employee> optionalEmployee = employeeRepository.findByIdAndActive(id,true);
+            return optionalEmployee.map(value -> new Result(value, true)).orElseGet(() -> new Result("Such employee id not exist!", false));
         }
         return new Result("You do not have the right to see information of another employee!", false);
     }
@@ -116,15 +114,15 @@ public class EmployeeService implements UserDetailsService {
 
         if (roleName.equals(RoleName.DIRECTOR) ||
                 (employeeWhichEnteredSystem.getId().equals(id) && employeeWhichEnteredSystem.getRole().getId().equals(employeeDto.getRoleId()))) {
-            Optional<Employee> optionalEmployee = employeeRepository.findById(id);
+            Optional<Employee> optionalEmployee = employeeRepository.findByIdAndActive(id,true);
             if (!optionalEmployee.isPresent()) {
                 return new Result("Such employee id not exist!", false);
             }
-            Optional<Employee> optionalEmployee1 = employeeRepository.findByUsernameAndIdNot(employeeDto.getUsername(), id);
+            Optional<Employee> optionalEmployee1 = employeeRepository.findByUsernameAndIdNotAndActive(employeeDto.getUsername(), id,true);
             if (optionalEmployee1.isPresent()) {
                 return new Result("This username belongs to another employee!", false);
             }
-            Optional<Employee> optionalEmployee2 = employeeRepository.findByPhoneNumberAndIdNot(employeeDto.getPhoneNumber(), id);
+            Optional<Employee> optionalEmployee2 = employeeRepository.findByPhoneNumberAndIdNotAndActive(employeeDto.getPhoneNumber(), id,true);
             if (optionalEmployee2.isPresent()) {
                 return new Result("This phone number belongs to another employee!", false);
             }
@@ -147,11 +145,13 @@ public class EmployeeService implements UserDetailsService {
         RoleName roleName = employee.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR)) {
-            Optional<Employee> optionalEmployee = employeeRepository.findById(id);
+            Optional<Employee> optionalEmployee = employeeRepository.findByIdAndActive(id,true);
             if (!optionalEmployee.isPresent()) {
                 return new Result("Such employee id not exist!", false);
             }
-            employeeRepository.deleteById(id);
+           Employee employee1 = optionalEmployee.get();
+            employee1.setActive(false);
+            employeeRepository.save(employee1);
             return new Result("Given employee successfully deleted.", true);
         }
         return new Result("You do not have the right to delete information of employees!", false);
@@ -159,7 +159,7 @@ public class EmployeeService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<Employee> optionalEmployee = employeeRepository.findByUsername(username);
+        Optional<Employee> optionalEmployee = employeeRepository.findByUsernameAndActive(username,true);
         if (optionalEmployee.isPresent()){
             return optionalEmployee.get();
         }

@@ -40,6 +40,8 @@ private String password;
     @ManyToOne
 private Role role;
 
+    private boolean active = true;
+
 private boolean accountNonExpired = true;
 
 private boolean accountNonLocked = true;

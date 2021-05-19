@@ -15,18 +15,17 @@ import javax.persistence.*;
 @NoArgsConstructor
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"kupyura", "currency"}))
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"kupyura_value_id", "kupyura_name_id"}))
 public class Kupyura extends General {
-@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-private Integer kupyura; //1000, 5000, 10000, 50000, ....
+    @OneToOne
+    private KupyuraValue kupyuraValue; //1000, 5000, 10000, 50000, ....
 
-    private String currency; // sum yoki dollar, ....
-
-
-
+    @OneToOne
+    private KupyuraName kupyuraName; // sum yoki dollar, ....
 
 
 }

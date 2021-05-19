@@ -56,6 +56,9 @@ public class CardService implements UserDetailsService {
                     cvvCode = (int) (Math.random() * 1000);
                 }
                 card.setCvvCode(cvvCode);
+                card.setBalance(1.0);
+            }else {
+                card.setBalance(500.0);
             }
 
             LocalDateTime localDateTime = LocalDateTime.now();
@@ -81,7 +84,7 @@ public class CardService implements UserDetailsService {
             usernameCount = (long) (Math.random() * Math.pow(10.0, 16.0));
         }
         String username = Long.toString(usernameCount);
-        boolean existsCardByUsername = cardRepository.existsByUsernameAndCardTypeId(username, cardTypeId);
+        boolean existsCardByUsername = cardRepository.existsByUsernameAndCardTypeIdAndActive(username, cardTypeId,true);
         if (existsCardByUsername) {
             generateUsername(cardTypeId);
         }
@@ -143,7 +146,7 @@ public class CardService implements UserDetailsService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Card> page1 = cardRepository.getByBankId(id, pageable);
+            Page<Card> page1 = cardRepository.getByBankIdAndActive(id, true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right to see list of cards!", false);
@@ -154,7 +157,7 @@ public class CardService implements UserDetailsService {
         RoleName roleName = employee.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR)) {
-            List<Card> cards = cardRepository.getByClientId(id);
+            List<Card> cards = cardRepository.getByClientIdAndActive(id,true);
             return new Result(cards, true);
         }
         return new Result("You do not have the right to see cards of another clients!", false);
@@ -166,7 +169,7 @@ public class CardService implements UserDetailsService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Card> page1 = cardRepository.getByCardTypeId(id, pageable);
+            Page<Card> page1 = cardRepository.getByCardTypeIdAndActive(id,true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right to see cards of another clients!", false);
@@ -255,7 +258,7 @@ public class CardService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<Card> optionalCard = cardRepository.findByUsername(username);
+        Optional<Card> optionalCard = cardRepository.findByUsernameAndActive(username,true);
         if (optionalCard.isPresent()){
             return optionalCard.get();
         }
