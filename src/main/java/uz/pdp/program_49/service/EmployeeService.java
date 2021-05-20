@@ -44,7 +44,8 @@ public class EmployeeService implements UserDetailsService {
         Employee employeeWhichEnteredSystem = (Employee) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         RoleName roleName = employeeWhichEnteredSystem.getRole().getRoleName();
 
-        if (roleName.equals(RoleName.DIRECTOR)) {
+        if ((roleName.equals(RoleName.ADMIN) && employeeDto.getRoleId().equals(employeeWhichEnteredSystem.getRole().getId()) ||
+                roleName.equals(RoleName.DIRECTOR))) {
             Optional<Employee> optionalEmployee = employeeRepository.findByUsernameAndActive(employeeDto.getUsername(),true);
             if (optionalEmployee.isPresent()) {
                 return new Result("This username belongs to another employee!", false);

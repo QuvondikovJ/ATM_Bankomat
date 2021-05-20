@@ -43,18 +43,20 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (initializationMode.equals("always")) {
-            Role role = new Role(1, RoleName.DIRECTOR);
-            Role role1 = new Role(2, RoleName.ACCOUNTING_MANAGER);
+            Role role = new Role(1, RoleName.ADMIN);
+            Role role1 = new Role(2, RoleName.DIRECTOR);
+            Role role2 = new Role(3, RoleName.ACCOUNTING_MANAGER);
             CardType cardType = new CardType(1, CardName.HUMO);
             CardType cardType1 = new CardType(2, CardName.UZCARD);
             CardType cardType2 = new CardType(3, CardName.VISA);
-            Employee employee = new Employee(directorId, "director", "directorov",
+            Employee employee = new Employee(directorId, "Admin", "Adminov",
                     "+998971112233", passwordEncoder.encode("1111"),
-                    "d@gmail.com", role,true, true, true, true, true);
+                    "admin@gmail.com", role,true, true, true, true, true);
 
             List<Role> roles = new ArrayList<>();
             roles.add(role);
             roles.add(role1);
+            roles.add(role2);
             roleRepository.saveAll(roles);
 
             List<CardType> cardTypes = new ArrayList<>();

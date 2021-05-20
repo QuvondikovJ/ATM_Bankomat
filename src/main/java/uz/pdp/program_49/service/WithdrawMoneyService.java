@@ -60,7 +60,7 @@ public class WithdrawMoneyService {
             return new Result("Your card has expired!", false);
         }
 
-        List<KupyuraInBankomat> kupyuraInBankomatList = kupyuraInBankomatRepository.getByBankomatIdAndActive(bankomat.getId(),true);
+        List<KupyuraInBankomat> kupyuraInBankomatList = kupyuraInBankomatRepository.getByBankomatIdAndActive(bankomat.getId(), true);
 
         if (withdrawMoneyDto.getCountMoney() > bankomat.getMaxWithdrawMoney()) {
             return new Result("It is not possible to withdraw more than $ 100 or 1 mln in one attempt from an ATM!", false);
@@ -114,7 +114,7 @@ public class WithdrawMoneyService {
                     " in terms of available banknotes", false);
         }
 
-        Result result = checkThatAmountOfMoneyIsSufficient(whichKupyura, howMuchKupyura, countOfMoneyList, kupyuraList, money, newWhichKupyura, newHowMuchKupyura);
+        Result result = checkThatAmountOfMoneyIsSufficient(whichKupyura, howMuchKupyura, countOfMoneyList, kupyuraList, withdrawMoneyDto.getCountMoney(), newWhichKupyura, newHowMuchKupyura);
         try {
             List<List<Integer>> newList = (List<List<Integer>>) result.getObject();
             newWhichKupyura = newList.get(0);
@@ -139,20 +139,20 @@ public class WithdrawMoneyService {
 
             if (bankomat.getCardType().getCardName().equals(CardName.VISA) && bankomat.getBalance() < 2000.0) {
                 // emailga xabar boradi
-//                sendEmail("quvondikovj6@gmail.com", bankomat.getBalance(), bankomat.getId(), "sum");
+                sendEmail("quvondikovj6@gmail.com", bankomat.getBalance(), bankomat.getId(), "sum");
 
             }
             if ((bankomat.getCardType().getCardName().equals(CardName.HUMO) || bankomat.getCardType().getCardName().equals(CardName.UZCARD)) &&
                     bankomat.getBalance() < 20000000.0) {
                 // emailga xabar boradi
-//                sendEmail("quvondikovj6@gmail.com", bankomat.getBalance(), bankomat.getId(), "dollar");
+                sendEmail("quvondikovj6@gmail.com", bankomat.getBalance(), bankomat.getId(), "dollar");
 
             }
             WithdrawMoney withdrawMoney = new WithdrawMoney(false);
             withdrawMoney.setWithdrawMoney(withdrawMoneyDto.getCountMoney());
             withdrawMoney.setBankomat(bankomat);
-withdrawMoney.setCard(card);
-withdrawMoneyRepository.save(withdrawMoney);
+            withdrawMoney.setCard(card);
+            withdrawMoneyRepository.save(withdrawMoney);
 
             return new Result("The exchange process was successful.", true);
 
@@ -165,8 +165,10 @@ withdrawMoneyRepository.save(withdrawMoney);
 
 
     public Result checkThatAmountOfMoneyIsSufficient(List<Integer> whichKupyura, List<Integer> howMuchKupyura,
-                                                     List<Integer> countOfMoneyList, List<Integer> kupyuraList, Integer money,
+                                                     List<Integer> countOfMoneyList, List<Integer> kupyuraList, int money,
                                                      List<Integer> newWhichKupyura, List<Integer> newHowMuchKupyura) {
+        List<List<Integer>> newList = new ArrayList<>();
+        Result result = new Result(null, true);
         for (int i = 0; i < whichKupyura.size(); i++) {
             for (int k = 0; k < kupyuraList.size(); k++) {
                 if (whichKupyura.get(i).equals(kupyuraList.get(k)) && countOfMoneyList.get(k) < howMuchKupyura.get(i)) {
@@ -179,50 +181,55 @@ withdrawMoneyRepository.save(withdrawMoney);
                         newWhichKupyura.add(kupyuraList.get(k));
                         newHowMuchKupyura.add(countOfMoneyList.get(k));
                     }
+
                     whichKupyura = new ArrayList<>();
                     howMuchKupyura = new ArrayList<>();
 
                     int s = 0;
+                    int moneyVariable = money;
                     for (Integer kupyura : kupyuraList) {
-                        if (kupyura < kupyuraList.get(k) && money / kupyura > 1) {
-                            howMuchKupyura.add((money - money % kupyura) / kupyura);
+                        if (kupyura < kupyuraList.get(k) && moneyVariable / kupyura >= 1) {
+                            howMuchKupyura.add((moneyVariable - moneyVariable % kupyura) / kupyura);
                             whichKupyura.add(kupyura);
-                            money = money - howMuchKupyura.get(s) * whichKupyura.get(s);
+                            moneyVariable = moneyVariable - howMuchKupyura.get(s) * whichKupyura.get(s);
                             s++;
                         }
                     }
-                    checkThatAmountOfMoneyIsSufficient(whichKupyura, howMuchKupyura, countOfMoneyList,
-                            kupyuraList, money, newWhichKupyura, newHowMuchKupyura);
 
+                    result = checkThatAmountOfMoneyIsSufficient(whichKupyura, howMuchKupyura, countOfMoneyList,
+                            kupyuraList, money, newWhichKupyura, newHowMuchKupyura);
+whichKupyura = new ArrayList<>();
+                    break;
                 } else if (whichKupyura.get(i).equals(kupyuraList.get(k)) && countOfMoneyList.get(k) >= howMuchKupyura.get(i)) {
                     newWhichKupyura.add(whichKupyura.get(i));
                     newHowMuchKupyura.add(howMuchKupyura.get(i));
-                    money = money - kupyuraList.get(k) * countOfMoneyList.get(k);
+                    money = money - whichKupyura.get(i) * howMuchKupyura.get(i);
                 }
+
             }
         }
-        List<List<Integer>> newList = new ArrayList<>();
-        newList.add(newWhichKupyura);
-        newList.add(newHowMuchKupyura);
-        return new Result(newList, true);
+        if (result.isActive()) {
+            newList.add(newWhichKupyura);
+            newList.add(newHowMuchKupyura);
+            return new Result(newList, true);
+        } else {
+            return result;
+        }
     }
-
-    public void sendEmail(String email, Double bankomatBalance, Integer bankomatId, String currencyType){
+    public void sendEmail(String email, Double bankomatBalance, Integer bankomatId, String currencyType) {
         try {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             mailMessage.setFrom("noreply@gmail.com");
             mailMessage.setTo(email);
             mailMessage.setSubject("Bankomatni to'ldirish kerak!");
-            String query = "Id si "+bankomatId+" ga teng bo'lgan bankomatda "+bankomatBalance+" "+
-                    currencyType+" qoldi. Bankomatni to'ldirishingiz lozim!";
-        mailMessage.setText(query);
-        javaMailSender.send(mailMessage);
-        }catch (Exception e){
-          e.printStackTrace();
+            String query = "Id si " + bankomatId + " ga teng bo'lgan bankomatda " + bankomatBalance + " " +
+                    currencyType + " qoldi. Bankomatni to'ldirishingiz lozim!";
+            mailMessage.setText(query);
+            javaMailSender.send(mailMessage);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-
-
 
 
     public Result depositMoneyAtAnATM(DepositMoneyDto depositMoneyDto) {
@@ -239,19 +246,18 @@ withdrawMoneyRepository.save(withdrawMoney);
         if (!checkExpiryDate) {
             return new Result("Your card has expired!", false);
         }
-        List<KupyuraInBankomat> kupyuraInBankomatList = kupyuraInBankomatRepository.getByBankomatIdAndActive(bankomat.getId(),true);
+        List<KupyuraInBankomat> kupyuraInBankomatList = kupyuraInBankomatRepository.getByBankomatIdAndActive(bankomat.getId(), true);
 
         List<Kupyura> kupyuraList = new ArrayList<>();
-List<Integer> kupyuraId = depositMoneyDto.getKupyuraId();
-for (Integer kupyura  : kupyuraId) {
-    Optional<Kupyura> optionalKupyura = kupyuraRepository.findById(kupyura);
-    if (optionalKupyura.isPresent()){
-        kupyuraList.add(optionalKupyura.get());
-    }
-}
+        List<Integer> kupyuraId = depositMoneyDto.getKupyuraId();
+        for (Integer kupyura : kupyuraId) {
+            Optional<Kupyura> optionalKupyura = kupyuraRepository.findById(kupyura);
+            if (optionalKupyura.isPresent()) {
+                kupyuraList.add(optionalKupyura.get());
+            }
+        }
 
         List<Integer> howMuchKupyura = depositMoneyDto.getHowMuchKupyura();
-
 
 
         int countMoney = 0;
@@ -298,54 +304,54 @@ for (Integer kupyura  : kupyuraId) {
         withdrawMoney.setCard(card);
         withdrawMoneyRepository.save(withdrawMoney);
 
-        return new Result("The exchange process was successful.",true);
+        return new Result("The exchange process was successful.", true);
     }
 
-public Result getWithdrawMoneyByBankomat(Integer bankomatId, SeeWithdrawMoneyDto seeWithdrawMoneyDto){
-Employee employee = (Employee) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-RoleName roleName = employee.getRole().getRoleName();
-
-if (roleName.equals(RoleName.DIRECTOR)){
-    LocalDate localDate = LocalDate.parse(seeWithdrawMoneyDto.getDate());
-    LocalTime localTime1 = LocalTime.of(0,0);
-    LocalTime localTime2 = LocalTime.of(23,59);
-    LocalDateTime localDateTime1 = LocalDateTime.of(localDate, localTime1);
-    LocalDateTime localDateTime2 = LocalDateTime.of(localDate, localTime2);
-    Timestamp timestamp1 = Timestamp.valueOf(localDateTime1);
-    Timestamp timestamp2 = Timestamp.valueOf(localDateTime2);
-
-    boolean existsByDate = withdrawMoneyRepository.existsByDateAndBankomatId(timestamp1,timestamp2, false, bankomatId);
-    if (!existsByDate){
-        return new Result(seeWithdrawMoneyDto.getDate()+" in this day does not any withdraw money from bankomat!",false);
-    }
-    List<WithdrawMoney> withdrawMoneyList = withdrawMoneyRepository.getByWithdrawMoney(timestamp1,timestamp2,false,bankomatId);
-    return new Result(withdrawMoneyList,true);
-}
-return new Result("You do not have the right to see list of withdrawing money!",false);
-}
-
-
-    public Result getDepositMoneyByBankomat(Integer bankomatId, SeeWithdrawMoneyDto seeWithdrawMoneyDto){
+    public Result getWithdrawMoneyByBankomat(Integer bankomatId, SeeWithdrawMoneyDto seeWithdrawMoneyDto) {
         Employee employee = (Employee) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         RoleName roleName = employee.getRole().getRoleName();
 
-        if (roleName.equals(RoleName.DIRECTOR)){
+        if (roleName.equals(RoleName.DIRECTOR)) {
             LocalDate localDate = LocalDate.parse(seeWithdrawMoneyDto.getDate());
-            LocalTime localTime1 = LocalTime.of(0,0);
-            LocalTime localTime2 = LocalTime.of(23,59);
+            LocalTime localTime1 = LocalTime.of(0, 0);
+            LocalTime localTime2 = LocalTime.of(23, 59);
             LocalDateTime localDateTime1 = LocalDateTime.of(localDate, localTime1);
             LocalDateTime localDateTime2 = LocalDateTime.of(localDate, localTime2);
             Timestamp timestamp1 = Timestamp.valueOf(localDateTime1);
             Timestamp timestamp2 = Timestamp.valueOf(localDateTime2);
 
-            boolean existsByDate = withdrawMoneyRepository.existsByDateAndBankomatId(timestamp1,timestamp2, true, bankomatId);
-            if (!existsByDate){
-                return new Result(seeWithdrawMoneyDto.getDate()+" in this day does not any withdraw money from bankomat!",false);
+            boolean existsByDate = withdrawMoneyRepository.existsByDateAndBankomatId(timestamp1, timestamp2, false, bankomatId);
+            if (!existsByDate) {
+                return new Result(seeWithdrawMoneyDto.getDate() + " in this day does not any withdraw money from bankomat!", false);
             }
-            List<WithdrawMoney> withdrawMoneyList = withdrawMoneyRepository.getByDepositMoney(timestamp1,timestamp2,true,bankomatId);
-            return new Result(withdrawMoneyList,true);
+            List<WithdrawMoney> withdrawMoneyList = withdrawMoneyRepository.getByWithdrawMoney(timestamp1, timestamp2, false, bankomatId);
+            return new Result(withdrawMoneyList, true);
         }
-        return new Result("You do not have the right to see list of withdrawing money!",false);
+        return new Result("You do not have the right to see list of withdrawing money!", false);
+    }
+
+
+    public Result getDepositMoneyByBankomat(Integer bankomatId, SeeWithdrawMoneyDto seeWithdrawMoneyDto) {
+        Employee employee = (Employee) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        RoleName roleName = employee.getRole().getRoleName();
+
+        if (roleName.equals(RoleName.DIRECTOR)) {
+            LocalDate localDate = LocalDate.parse(seeWithdrawMoneyDto.getDate());
+            LocalTime localTime1 = LocalTime.of(0, 0);
+            LocalTime localTime2 = LocalTime.of(23, 59);
+            LocalDateTime localDateTime1 = LocalDateTime.of(localDate, localTime1);
+            LocalDateTime localDateTime2 = LocalDateTime.of(localDate, localTime2);
+            Timestamp timestamp1 = Timestamp.valueOf(localDateTime1);
+            Timestamp timestamp2 = Timestamp.valueOf(localDateTime2);
+
+            boolean existsByDate = withdrawMoneyRepository.existsByDateAndBankomatId(timestamp1, timestamp2, true, bankomatId);
+            if (!existsByDate) {
+                return new Result(seeWithdrawMoneyDto.getDate() + " in this day does not any withdraw money from bankomat!", false);
+            }
+            List<WithdrawMoney> withdrawMoneyList = withdrawMoneyRepository.getByDepositMoney(timestamp1, timestamp2, true, bankomatId);
+            return new Result(withdrawMoneyList, true);
+        }
+        return new Result("You do not have the right to see list of withdrawing money!", false);
     }
 
 }

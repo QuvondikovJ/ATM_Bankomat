@@ -36,7 +36,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     CardRepository cardRepository;
 
-    Map<String, LocalDateTime> map = new LinkedHashMap<>();
+    List<String> list = new ArrayList<>();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -65,37 +65,31 @@ public class JwtFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
+              for (int i = 0; i < list.size(); i++) {
+                  if (list.get(i).equals(cardUsername)) list.remove(i);
+              }
             } else {
-                LocalDateTime localDateTime = LocalDateTime.now();
-                boolean exists = map.containsKey(cardUsername);
-                if (exists) {
-                    Optional<Card> optionalCard = cardRepository.findByUsernameAndActive(cardUsername, true);
-                    if (optionalCard.isPresent()) {
-                        Card card = optionalCard.get();
-                        card.setEnabled(false);
-                        cardRepository.save(card);
-                    }
-                } else {
-                    map.put(cardUsername, localDateTime);
-                   Collection<LocalDateTime> collection = map.values();
-                    for (LocalDateTime localDateTime1 : collection) {
-                        if (localDateTime1.plusDays(1).isBefore(localDateTime)) {
-                            Set<String> keySet = map.keySet();
-                            for (String key : keySet) {
-                                if (map.get(key).equals(localDateTime1)) {
-                                    map.remove(key);
-                                }
-                            }
+                boolean check = false;
+                for (String checkCardUsername : list) {
+                    if (checkCardUsername.equals(cardUsername)) {
+                        Optional<Card> optionalCard = cardRepository.findByUsernameAndActive(cardUsername, true);
+                        if (optionalCard.isPresent()) {
+                            Card card = optionalCard.get();
+                            card.setEnabled(false);
+                            cardRepository.save(card);
+                            list.remove(cardUsername);
+                            check = true;
                         }
                     }
-
+                }
+                if (!check) {
+                    list.add(cardUsername);
                 }
             }
-            // bu yerda agar card orqali tizimga kirilganda  1 marta not'g'ri kiritganidan
-            // keyin bir kun davomida yana bir marta noto'g'ri password kiritsa
-            // card bloklanadi
+
         }
-            filterChain.doFilter(request, response);
+        filterChain.doFilter(request, response);
     }
 
 }
