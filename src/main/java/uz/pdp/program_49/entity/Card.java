@@ -14,6 +14,7 @@ import uz.pdp.program_49.entity.template.General;
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
 
@@ -24,11 +25,11 @@ import java.util.UUID;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 public class Card extends General implements UserDetails {
-@Id
+    @Id
     @GeneratedValue
     private UUID id;
 
-private String username;  // 16 xonali takrorlanmas son
+    private String username;  // 16 xonali takrorlanmas son
 
     @ManyToOne
     private Bank bank;
@@ -50,24 +51,25 @@ private String username;  // 16 xonali takrorlanmas son
 
     private boolean active = true;
 
+    @ManyToOne
+    private Role role;
 
+    private boolean accountNonExpired = true;
 
-private boolean accountNonExpired = true;
+    private boolean accountNonLocked = true;
 
-private boolean accountNonLocked = true;
+    private boolean credentialsNonExpired = true;
 
-private boolean credentialsNonExpired = true;
-
-private boolean enabled  =true;
+    private boolean enabled = true;
 
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        return Collections.singleton(role);
     }
 
     @Override
-    public String getUsername(){
+    public String getUsername() {
         return this.username;
     }
 

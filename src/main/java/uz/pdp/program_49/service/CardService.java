@@ -15,10 +15,7 @@ import uz.pdp.program_49.entity.enums.CardName;
 import uz.pdp.program_49.entity.enums.RoleName;
 import uz.pdp.program_49.payload.Result;
 import uz.pdp.program_49.payload.CardDto;
-import uz.pdp.program_49.repository.BankRepository;
-import uz.pdp.program_49.repository.CardRepository;
-import uz.pdp.program_49.repository.CardTypeRepository;
-import uz.pdp.program_49.repository.ClientRepository;
+import uz.pdp.program_49.repository.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -37,6 +34,8 @@ public class CardService implements UserDetailsService {
     CardTypeRepository cardTypeRepository;
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    RoleRepository roleRepository;
 
 
     public Result add(CardDto cardDto) {
@@ -48,7 +47,7 @@ public class CardService implements UserDetailsService {
             UUID uuid = UUID.fromString(cardDto.getClientId());
             Client client = clientRepository.getOne(uuid);
             CardType cardType = cardTypeRepository.getOne(cardDto.getCardTypeId());
-
+            Role role = roleRepository.getOne(cardDto.getRoleId());
             Card card = new Card();
             if (cardType.getCardName().equals(CardName.VISA)) {
                 int cvvCode = (int) (Math.random() * 1000);
@@ -57,7 +56,7 @@ public class CardService implements UserDetailsService {
                 }
                 card.setCvvCode(cvvCode);
                 card.setBalance(1.0);
-            }else {
+            } else {
                 card.setBalance(500.0);
             }
 
@@ -69,6 +68,7 @@ public class CardService implements UserDetailsService {
             card.setUsername(username);
             card.setBank(bank);
             card.setClient(client);
+            card.setRole(role);
             card.setExpiryDate(expiryDate);
             card.setPassword(passwordEncoder.encode(cardDto.getPassword()));
             card.setCardType(cardType);
@@ -84,19 +84,18 @@ public class CardService implements UserDetailsService {
             usernameCount = (long) (Math.random() * Math.pow(10.0, 16.0));
         }
         String username = Long.toString(usernameCount);
-        boolean existsCardByUsername = cardRepository.existsByUsernameAndCardTypeIdAndActive(username, cardTypeId,true);
+        boolean existsCardByUsername = cardRepository.existsByUsernameAndCardTypeIdAndActive(username, cardTypeId, true);
         if (existsCardByUsername) {
             generateUsername(cardTypeId);
         }
         return username;
     }
 
-    public void replenishBalance(UUID cardId, double countMoney){
+    public void replenishBalance(UUID cardId, double countMoney) {
         Card card = cardRepository.getOne(cardId);
         card.setBalance(card.getBalance() + countMoney);
         cardRepository.save(card);
     }
-
 
 
     public Result get(int page) {
@@ -157,7 +156,7 @@ public class CardService implements UserDetailsService {
         RoleName roleName = employee.getRole().getRoleName();
 
         if (roleName.equals(RoleName.DIRECTOR)) {
-            List<Card> cards = cardRepository.getByClientIdAndActive(id,true);
+            List<Card> cards = cardRepository.getByClientIdAndActive(id, true);
             return new Result(cards, true);
         }
         return new Result("You do not have the right to see cards of another clients!", false);
@@ -169,7 +168,7 @@ public class CardService implements UserDetailsService {
 
         if (roleName.equals(RoleName.DIRECTOR)) {
             Pageable pageable = PageRequest.of(page, 20);
-            Page<Card> page1 = cardRepository.getByCardTypeIdAndActive(id,true, pageable);
+            Page<Card> page1 = cardRepository.getByCardTypeIdAndActive(id, true, pageable);
             return new Result(page1, true);
         }
         return new Result("You do not have the right to see cards of another clients!", false);
@@ -202,7 +201,7 @@ public class CardService implements UserDetailsService {
             }
             if (!card.getCardType().equals(cardType)) {
                 String username = generateUsername(cardType.getId()); // agar card type o'zgarsa uni username i xam o'zgaradi
-           card.setUsername(username);
+                card.setUsername(username);
             }
 
             card.setBank(bank);
@@ -258,11 +257,11 @@ public class CardService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<Card> optionalCard = cardRepository.findByUsernameAndActive(username,true);
-        if (optionalCard.isPresent()){
+        Optional<Card> optionalCard = cardRepository.findByUsernameAndActive(username, true);
+        if (optionalCard.isPresent()) {
             return optionalCard.get();
         }
-        throw new UsernameNotFoundException(username+ " such username not found!");
+        throw new UsernameNotFoundException(username + " such username not found!");
     }
 }
 

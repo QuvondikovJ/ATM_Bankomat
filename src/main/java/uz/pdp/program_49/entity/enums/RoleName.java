@@ -4,7 +4,8 @@ public enum RoleName {
 
     ADMIN,
     DIRECTOR,
-    ACCOUNTING_MANAGER;
+    ACCOUNTING_MANAGER,
+    CARD;
 
 
 }

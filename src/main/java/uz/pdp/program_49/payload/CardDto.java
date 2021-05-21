@@ -10,7 +10,7 @@ private Integer bankId;
 private String  clientId;
 private String  password;
 private Integer cardTypeId;
-
+private Integer roleId;
 
 
 }

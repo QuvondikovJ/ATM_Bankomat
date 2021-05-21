@@ -46,6 +46,7 @@ public class DataLoader implements CommandLineRunner {
             Role role = new Role(1, RoleName.ADMIN);
             Role role1 = new Role(2, RoleName.DIRECTOR);
             Role role2 = new Role(3, RoleName.ACCOUNTING_MANAGER);
+            Role role3 = new Role(4, RoleName.CARD);
             CardType cardType = new CardType(1, CardName.HUMO);
             CardType cardType1 = new CardType(2, CardName.UZCARD);
             CardType cardType2 = new CardType(3, CardName.VISA);
@@ -57,6 +58,7 @@ public class DataLoader implements CommandLineRunner {
             roles.add(role);
             roles.add(role1);
             roles.add(role2);
+            roles.add(role3);
             roleRepository.saveAll(roles);
 
             List<CardType> cardTypes = new ArrayList<>();
